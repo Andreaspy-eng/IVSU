@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ profession.name }}</title>
+</head>
+<body>
+    <h1>{{ profession.name }}</h1>
+    <h2>Трудовые функции:</h2>
+    {% for lf in labor_functions %}
+        <div>
+            <h3>{{ lf.code }} - {{ lf.name }} (Уровень {{ lf.qualification_level }})</h3>
+            <h4>Трудовые действия:</h4>
+            <ul>
+                {% for action in lf.laboraction_set.all %}
+                    <li>{{ action.description }}</li>
+                {% endfor %}
+            </ul>
+            <!-- Аналогично для знаний и умений -->
+        </div>
+    {% endfor %}
+</body>
+</html>

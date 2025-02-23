@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Поиск профессий</title>
+</head>
+<body>
+    <h1>Поиск по профессиям</h1>
+    <form method="GET">
+        <input type="text" name="q" placeholder="Название профессии">
+        <select name="level">
+            <option value="">Все уровни</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+        </select>
+        <button type="submit">Найти</button>
+    </form>
+
+    {% for profession in professions %}
+        <h2><a href="{% url 'profession_detail' profession.id %}">{{ profession.name }}</a></h2>
+        <p>Код ОКПДТР: {{ profession.okpdtr_code }}</p>
+    {% endfor %}
+</body>
+</html>
