@@ -23,4 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.search, name='search'),
     path('profession/<int:profession_id>/', views.profession_detail, name='profession_detail'),
+    path('upload/', views.upload_excel, name='upload'),
 ]

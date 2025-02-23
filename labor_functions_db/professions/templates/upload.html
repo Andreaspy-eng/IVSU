@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Загрузка данных</title>
+</head>
+<body>
+    <h1>Загрузите Excel-файл</h1>
+    {% if messages %}
+        {% for message in messages %}
+            <div style="color: {% if message.tags == 'error' %}red{% else %}green{% endif %};">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="excel_file" accept=".xlsx" required>
+        <button type="submit">Загрузить</button>
+    </form>
+</body>
+</html>
