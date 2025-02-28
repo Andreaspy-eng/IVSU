@@ -1,0 +1,18 @@
+{% for profession in professions %}
+    <div class="profession-card">
+        <h3>{{ profession.name }}</h3>
+        <p class="code">Код: {{ profession.code }}</p>
+        <div class="details">
+            {% for lf in profession.laborfunction_set.all %}
+                <span class="level">Уровень {{ lf.qualification_level }}</span>
+            {% endfor %}
+            <span class="okpdtr">ОКПДТР: {{ profession.okpdtr_code }}</span>
+        </div>
+        <br>
+        <a href="{% url 'profession_detail' profession.id %}" class="details-btn">Подробнее</a>
+    </div>
+{% empty %}
+    <div class="no-results">
+        <p>Ничего не найдено 😞</p>
+    </div>
+{% endfor %}

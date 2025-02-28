@@ -21,7 +21,12 @@ from professions import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.search, name='search'),
     path('profession/<int:profession_id>/', views.profession_detail, name='profession_detail'),
-    path('upload/', views.upload_excel, name='upload'),
+    path('', views.index, name='index'),
+    path('add-profession/', views.add_profession, name='add_profession'),
+    path('upload-excel/', views.upload_excel, name='upload_excel'),
+    path('profession/<int:profession_id>/add-details/', views.add_details, name='add_details'),
+    path('profession/<int:profession_id>/delete/', views.delete_profession, name='delete_profession'),
+    path('profession/<int:profession_id>/edit/', views.edit_profession, name='edit_profession'),
+    path('labor-function/<int:labor_function_id>/edit/', views.edit_labor_function, name='edit_labor_function'),
 ]

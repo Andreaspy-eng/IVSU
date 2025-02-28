@@ -1,22 +1,183 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ profession.name }}</title>
-</head>
-<body>
-    <h1>{{ profession.name }}</h1>
-    <h2>Трудовые функции:</h2>
-    {% for lf in labor_functions %}
-        <div>
-            <h3>{{ lf.code }} - {{ lf.name }} (Уровень {{ lf.qualification_level }})</h3>
-            <h4>Трудовые действия:</h4>
-            <ul>
-                {% for action in lf.laboraction_set.all %}
-                    <li>{{ action.description }}</li>
-                {% endfor %}
-            </ul>
-            <!-- Аналогично для знаний и умений -->
+{% extends 'professions/base.html' %}
+{% load static custom_template_tags %}{% load static %}
+
+{% block content %}
+<div class="profession-detail">
+    <div class="profession-header">
+        <h1>{{ profession.name }}</h1>
+        <button class="btn-edit" onclick="openModal('edit-profession')">✎ Редактировать</button>
+        <form method="post" action="{% url 'delete_profession' profession.id %}" style="margin-top: 20px;">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger" onclick="return confirm('Удалить профессию?')">Удалить профессию</button>
+        </form>
+    </div>
+    
+
+    <div class="profession-info">
+        <div class="info-card">
+            <h3>Основные данные</h3>
+            <p><strong>Код профессии:</strong> {{ profession.code }}</p>
+            <p><strong>ОКПДТР:</strong> {{ profession.okpdtr_code }}</p>
         </div>
-    {% endfor %}
-</body>
-</html>
+
+        <div class="info-card">
+            <h3>Классификаторы</h3>
+            <p><strong>Код ОТФ:</strong> 
+                {% for lf in labor_functions %}
+                    {{ lf.generalized_function.code }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+            <p><strong>Код ОКСО:</strong> 
+                {% for lf in labor_functions %}
+                    {% for okso in lf.okso_set.all %}
+                        {{ okso.code }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </p>
+        </div>
+    </div>
+
+    <div class="labor-functions">
+        {% for lf in labor_functions %}
+            <div class="lf-card">
+                <h3>{{ lf.name }} (Уровень {{ lf.qualification_level }})</h3>
+                
+                <div class="lf-details">
+                    <div class="detail-section">
+                        <h4>Трудовые действия</h4>
+                        <ul>
+                            {% for action in lf.laboraction_set.all %}
+                                <li>{{ action.description }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>Необходимые знания</h4>
+                        <ul>
+                            {% for knowledge in lf.requiredknowledge_set.all %}
+                                <li>{{ knowledge.description }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>Необходимые умения</h4>
+                        <ul>
+                            {% for skill in lf.requiredskill_set.all %}
+                                <li>{{ skill.description }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальное окно редактирования профессии -->
+<div id="edit-profession-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('edit-profession')">&times;</span>
+        <h2>Редактирование: {{ profession.name }}</h2>
+        
+        <form method="post" action="{% url 'edit_profession' profession.id %}">
+            {% csrf_token %}
+            
+            <!-- Основные данные -->
+            <div class="form-section">
+                <h3>Основные данные</h3>
+                <div class="form-row">
+                    <label>Название:</label>
+                    {{ profession_form.name }}
+                </div>
+                <div class="form-row">
+                    <label>Код:</label>
+                    {{ profession_form.code }}
+                </div>
+                <div class="form-row">
+                    <label>Код ОКПДТР:</label>
+                    {{ profession_form.okpdtr_code }}
+                </div>
+            </div>
+
+            <!-- Трудовые функции -->
+            <div class="form-section">
+                <h3>Трудовые функции</h3>
+                {{ lf_formset.management_form }}
+                {% for form in lf_formset %}
+                    <div class="lf-form">
+                        <div class="form-row">
+                            <label>Название функции:</label>
+                            {{ form.name }}
+                        </div>
+                        <div class="form-row">
+                            <label>Уровень квалификации:</label>
+                            {{ form.qualification_level }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Трудовые действия -->
+            <div class="form-section">
+                <h3>Трудовые действия</h3>
+                <div id="actions-container">
+                    {% for action in labor_actions %}
+                        <div class="form-row">
+                            <input type="text" name="actions" value="{{ action.description }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" onclick="addActionField()">Добавить действие</button>
+            </div>
+
+            <!-- Необходимые знания -->
+            <div class="form-section">
+                <h3>Необходимые знания</h3>
+                {% for knowledge in required_knowledge %}
+                    <div class="form-row">
+                        <input type="text" name="knowledge" value="{{ knowledge.description }}">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Необходимые умения -->
+            <div class="form-section">
+                <h3>Необходимые умения</h3>
+                {% for skill in required_skills %}
+                    <div class="form-row">
+                        <input type="text" name="skills" value="{{ skill.description }}">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn-primary">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Динамическое добавление полей
+    function addField(containerId) {
+        const container = document.getElementById(containerId);
+        const newField = document.createElement('input');
+        newField.type = 'text';
+        newField.name = containerId.replace('-container', '');
+        newField.className = 'form-field';
+        container.appendChild(newField);
+    }
+
+    function addActionField() { addField('actions-container'); }
+    function addKnowledgeField() { addField('knowledge-container'); }
+    function addSkillField() { addField('skills-container'); }
+
+    // Прокрутка контента
+    document.querySelectorAll('.modal-content').forEach(modal => {
+        modal.style.maxHeight = '80vh';
+        modal.style.overflowY = 'auto';
+    });
+</script>
+
+<script src="{% static 'js/scripts.js' %}"></script>
+{% endblock %}

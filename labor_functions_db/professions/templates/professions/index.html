@@ -1,0 +1,82 @@
+{% extends 'professions/base.html' %}
+{% load static %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>База профессий в ИТ</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="{% static 'js/search.js' %}"></script>
+    <script src="{% static 'js/scripts.js' %}"></script>
+</head>
+<body>
+    <header class="header">
+        <h1>База профессий в ИТ</h1>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="openModal('add-profession')">Добавить профессию</button>
+            <button class="btn-secondary" onclick="openModal('upload-excel')">Загрузить Excel</button>
+        </div>
+    </header>
+
+    <div class="search-container">
+        <form id="search-form" method="GET" action="{% url 'index' %}">
+            <div class="search-fields">
+                <input type="text" 
+                       name="q" 
+                       placeholder="Название профессии или код..." 
+                       value="{{ request.GET.q }}"
+                       class="search-input">
+                
+                <select name="level" class="search-select">
+                    <option value="">Все уровни</option>
+                    <option value="6" {% if request.GET.level == '6' %}selected{% endif %}>Уровень 6</option>
+                    <option value="7" {% if request.GET.level == '7' %}selected{% endif %}>Уровень 7</option>
+                </select>
+    
+                <button type="submit" class="btn-primary">Найти</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="profession-grid" id="search-results">
+        {% include 'professions/_profession_cards.html' %}
+    </div>
+
+    
+
+    <div id="add-profession-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('add-profession')">&times;</span>
+            <h2>Новая профессия</h2>
+            <form method="post" action="{% url 'add_profession' %}">
+                {% csrf_token %}
+                <input type="text" name="name" placeholder="Название профессии" required>
+                <input type="text" name="code" placeholder="Код профессии" required>
+                <input type="text" name="okpdtr_code" placeholder="Код ОКПДТР">
+                <button type="submit" class="btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="upload-excel-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('upload-excel')">&times;</span>
+            <h2>Загрузить Excel</h2>
+            <form method="post" enctype="multipart/form-data" action="{% url 'upload_excel' %}">
+                {% csrf_token %}
+                <div id="drop-zone" class="drop-zone">
+                    <p>Перетащите файл сюда или</p>
+                    <input type="file" id="excel-file-input" name="excel_file" accept=".xlsx" required hidden>
+                    <label for="excel-file-input" class="btn-primary">Выбрать файл</label>
+                    <div id="file-name" class="file-name"></div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 15px;">Загрузить</button>
+            </form>
+        </div>
+    </div>
+
+    
+</body>
+</html>
+{% endblock %}
