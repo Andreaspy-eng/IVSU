@@ -22,18 +22,18 @@
 
    ``` bash
     python -m venv env
-    source env/bin/activate  # Для Windows: env\Scripts\activate```
+    source env/bin/activate  # Для Windows: env\Scripts\activate ```
     
 3. Установите зависимости:
 
     ```bash
-    pip install -r requirements.txt```
+    pip install -r requirements.txt ```
     
 4. Настройте базу данных и запустите сервер:
 
    ``` bash
     python manage.py migrate
-    python manage.py runserver```
+    python manage.py runserver ```
     
 5. Откройте [http://127.0.0.1:8000/](http://127.0.0.1:8000/) в браузере.
 
