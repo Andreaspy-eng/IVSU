@@ -80,10 +80,10 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal('edit-profession')">&times;</span>
         <h2>Редактирование: {{ profession.name }}</h2>
-        
+
         <form method="post" action="{% url 'edit_profession' profession.id %}">
             {% csrf_token %}
-            
+
             <!-- Основные данные -->
             <div class="form-section">
                 <h3>Основные данные</h3>
@@ -100,57 +100,55 @@
                     {{ profession_form.okpdtr_code }}
                 </div>
             </div>
-
-            <!-- Трудовые функции -->
-            <div class="form-section">
-                <h3>Трудовые функции</h3>
-                {{ lf_formset.management_form }}
-                {% for form in lf_formset %}
-                    <div class="lf-form">
-                        <div class="form-row">
-                            <label>Название функции:</label>
-                            {{ form.name }}
-                        </div>
-                        <div class="form-row">
-                            <label>Уровень квалификации:</label>
-                            {{ form.qualification_level }}
-                        </div>
-                    </div>
-                {% endfor %}
+<!-- Трудовые функции -->
+<div class="form-section">
+    <h3>Трудовые функции</h3>
+    {{ lf_formset.management_form }}
+    {% for form in lf_formset %}
+        <div class="lf-form">
+            {{ form.id }}
+            <h4>Трудовая функция</h4>
+            <div class="form-row">
+                <label>Название:</label>
+                {{ form.name }}
             </div>
-
-            <!-- Трудовые действия -->
-            <div class="form-section">
-                <h3>Трудовые действия</h3>
-                <div id="actions-container">
-                    {% for action in labor_actions %}
-                        <div class="form-row">
-                            <input type="text" name="actions" value="{{ action.description }}">
-                        </div>
-                    {% endfor %}
-                </div>
-                <button type="button" onclick="addActionField()">Добавить действие</button>
+            <div class="form-row">
+                <label>Уровень квалификации:</label>
+                {{ form.qualification_level }}
             </div>
-
-            <!-- Необходимые знания -->
-            <div class="form-section">
-                <h3>Необходимые знания</h3>
-                {% for knowledge in required_knowledge %}
-                    <div class="form-row">
-                        <input type="text" name="knowledge" value="{{ knowledge.description }}">
-                    </div>
-                {% endfor %}
+            <div class="form-row">
+                <label>Трудовые действия (по одному на строку):</label>
+                <textarea name="{{ form.prefix }}-actions">
+                    {% if form.instance.id %}
+                        {% for action in form.instance.laboraction_set.all %}
+                            {{ action.description }}
+                        {% endfor %}
+                    {% endif %}
+                </textarea>
             </div>
-
-            <!-- Необходимые умения -->
-            <div class="form-section">
-                <h3>Необходимые умения</h3>
-                {% for skill in required_skills %}
-                    <div class="form-row">
-                        <input type="text" name="skills" value="{{ skill.description }}">
-                    </div>
-                {% endfor %}
+            <div class="form-row">
+                <label>Необходимые знания (по одному на строку):</label>
+                <textarea name="{{ form.prefix }}-knowledge">
+                    {% if form.instance.id %}
+                        {% for knowledge in form.instance.requiredknowledge_set.all %}
+                            {{ knowledge.description }}
+                        {% endfor %}
+                    {% endif %}
+                </textarea>
             </div>
+            <div class="form-row">
+                <label>Необходимые умения (по одному на строку):</label>
+                <textarea name="{{ form.prefix }}-skills">
+                    {% if form.instance.id %}
+                        {% for skill in form.instance.requiredskill_set.all %}
+                            {{ skill.description }}
+                        {% endfor %}
+                    {% endif %}
+                </textarea>
+            </div>
+        </div>
+    {% endfor %}
+</div>
 
             <button type="submit" class="btn-primary">Сохранить</button>
         </form>
@@ -158,20 +156,6 @@
 </div>
 
 <script>
-    // Динамическое добавление полей
-    function addField(containerId) {
-        const container = document.getElementById(containerId);
-        const newField = document.createElement('input');
-        newField.type = 'text';
-        newField.name = containerId.replace('-container', '');
-        newField.className = 'form-field';
-        container.appendChild(newField);
-    }
-
-    function addActionField() { addField('actions-container'); }
-    function addKnowledgeField() { addField('knowledge-container'); }
-    function addSkillField() { addField('skills-container'); }
-
     // Прокрутка контента
     document.querySelectorAll('.modal-content').forEach(modal => {
         modal.style.maxHeight = '80vh';

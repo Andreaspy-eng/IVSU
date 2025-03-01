@@ -2,7 +2,12 @@ function openModal(modalId) {
     const modal = document.getElementById(`${modalId}-modal`);
     if (modal) {
         modal.style.display = 'block';
-        document.body.style.overflow = 'hidden'; 
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.transition = 'opacity 0.3s ease-in-out';
+            modal.style.opacity = '1';
+        }, 10);
+        document.body.style.overflow = 'hidden';
     } else {
         console.error('Modal not found:', `${modalId}-modal`);
     }
@@ -11,8 +16,19 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(`${modalId}-modal`);
     if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; 
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.style.transition = '';
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+}
+
+// Закрытие при клике вне окна
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        closeModal(event.target.id.replace('-modal', ''));
     }
 }
 
@@ -31,11 +47,11 @@ function addLaborFunction() {
 }
 
 // Закрытие при клике вне окна
-window.onclick = function(event) {
-  if (event.target.className === 'modal') {
-      event.target.style.display = 'none';
-  }
-}
+// window.onclick = function(event) {
+//   if (event.target.className === 'modal') {
+//       event.target.style.display = 'none';
+//   }
+// }
 
 // Обработчики для Drag & Drop
 const dropZone = document.getElementById('drop-zone');

@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
+from django.db import transaction
 from django.db.models import Q
 from django.forms import inlineformset_factory
 from .forms import ProfessionForm, LaborFunctionForm, GeneralizedLaborFunctionForm, OKSOForm
@@ -203,7 +204,7 @@ def search(request):
 def profession_detail(request, profession_id):
     profession = get_object_or_404(Profession, id=profession_id)
     labor_functions = LaborFunction.objects.filter(profession=profession)
-    
+
     # Инициализация форм для модального окна
     LaborFunctionFormSet = inlineformset_factory(
         Profession,
@@ -212,96 +213,83 @@ def profession_detail(request, profession_id):
         extra=1,
         can_delete=True
     )
-    
-    if request.method == 'POST':
-        form = ProfessionForm(request.POST, instance=profession)
-        formset = LaborFunctionFormSet(request.POST, instance=profession)
-        
-        if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
-            return redirect('profession_detail', profession_id=profession.id)
-    else:
-        form = ProfessionForm(instance=profession)
-        formset = LaborFunctionFormSet(instance=profession)
+    form = ProfessionForm(instance=profession)
+    formset = LaborFunctionFormSet(instance=profession)
 
     return render(request, 'profession_detail.html', {
         'profession': profession,
         'labor_functions': labor_functions,
         'profession_form': form,
-        'labor_function_formset': formset
+        'lf_formset': formset
     })
 
 def edit_profession(request, profession_id):
     profession = get_object_or_404(Profession, id=profession_id)
+    
+    # Создаем formset для LaborFunction
     LaborFunctionFormSet = inlineformset_factory(
-        Profession, 
-        LaborFunction, 
-        fields=('name', 'qualification_level'), 
-        extra=1
+        Profession,
+        LaborFunction,
+        fields=('name', 'qualification_level'),
+        extra=1,
+        can_delete=True
     )
 
     if request.method == 'POST':
         form = ProfessionForm(request.POST, instance=profession)
         formset = LaborFunctionFormSet(request.POST, instance=profession)
-        
-        if form.is_valid() and formset.is_valid():
-            profession = form.save()
-            
-            formset.save()
-            save_related_data(profession, request.POST)
-            
-            return redirect('profession_detail', profession_id=profession.id)
 
+        if form.is_valid() and formset.is_valid():
+            # Используем транзакцию для атомарности
+            with transaction.atomic():
+                # Сохраняем профессию и связанные трудовые функции
+                profession = form.save()
+                labor_functions = formset.save()  # Сохраняем formset и получаем список сохраненных объектов
+
+                # Обрабатываем связанные данные для каждой формы
+                for form in formset.forms:
+                    if form.is_valid():
+                        labor_function = form.instance
+                        prefix = form.prefix
+
+                        # Извлекаем данные из текстовых полей
+                        actions_text = request.POST.get(f"{prefix}-actions", "")
+                        knowledge_text = request.POST.get(f"{prefix}-knowledge", "")
+                        skills_text = request.POST.get(f"{prefix}-skills", "")
+
+                        # Удаляем старые связанные объекты только для сохраненных LaborFunction
+                        if labor_function.pk:  # Проверяем, есть ли первичный ключ
+                            LaborAction.objects.filter(labor_function=labor_function).delete()
+                            RequiredKnowledge.objects.filter(labor_function=labor_function).delete()
+                            RequiredSkill.objects.filter(labor_function=labor_function).delete()
+
+                        # Создаем новые связанные объекты
+                        for action in actions_text.split('\n'):
+                            if action.strip():
+                                LaborAction.objects.create(
+                                    description=action.strip(),
+                                    labor_function=labor_function
+                                )
+                        for knowledge in knowledge_text.split('\n'):
+                            if knowledge.strip():
+                                RequiredKnowledge.objects.create(
+                                    description=knowledge.strip(),
+                                    labor_function=labor_function
+                                )
+                        for skill in skills_text.split('\n'):
+                            if skill.strip():
+                                RequiredSkill.objects.create(
+                                    description=skill.strip(),
+                                    labor_function=labor_function
+                                )
+
+            # После успешного сохранения перенаправляем
+            return redirect('profession_detail', profession_id=profession.id)
     else:
         form = ProfessionForm(instance=profession)
         formset = LaborFunctionFormSet(instance=profession)
-    
-    # Получаем связанные данные
-    labor_actions = LaborAction.objects.filter(labor_function__profession=profession)
-    required_knowledge = RequiredKnowledge.objects.filter(labor_function__profession=profession)
-    required_skills = RequiredSkill.objects.filter(labor_function__profession=profession)
 
-    return render(request, 'profession_detail.html', {
-        'profession': profession,
-        'profession_form': form,
-        'lf_formset': formset,
-        'labor_actions': labor_actions,
-        'required_knowledge': required_knowledge,
-        'required_skills': required_skills
-    })
-
-def save_related_data(profession, post_data):
-    # Удаляем старые записи
-    LaborAction.objects.filter(labor_function__profession=profession).delete()
-    RequiredKnowledge.objects.filter(labor_function__profession=profession).delete()
-    RequiredSkill.objects.filter(labor_function__profession=profession).delete()
-
-    # Создаем новые записи
-    for lf in profession.laborfunction_set.all():
-        # Трудовые действия
-        for action in post_data.getlist('actions'):
-            if action.strip():
-                LaborAction.objects.create(
-                    description=action.strip(),
-                    labor_function=lf
-                )
-        
-        # Необходимые знания
-        for knowledge in post_data.getlist('knowledge'):
-            if knowledge.strip():
-                RequiredKnowledge.objects.create(
-                    description=knowledge.strip(),
-                    labor_function=lf
-                )
-        
-        # Необходимые умения
-        for skill in post_data.getlist('skills'):
-            if skill.strip():
-                RequiredSkill.objects.create(
-                    description=skill.strip(),
-                    labor_function=lf
-                )
+    return render(request, 'edit_profession.html', {'form': form, 'formset': formset})
 
 def delete_profession(request, profession_id):
     profession = get_object_or_404(Profession, id=profession_id)
